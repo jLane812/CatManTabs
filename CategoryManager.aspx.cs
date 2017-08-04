@@ -12,8 +12,7 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
 {
     protected SqlDataSource sds = new SqlDataSource();
     protected List<string> errorMessage = new List<string>();
-    //Point to ATHENA.Product.TempProductData.CategoryCreationInCatMan_TEST to test. Point to ATHENA.Product.Product.CategoryHierarchy to push live.
-    protected string targetTable = "ATHENA.Product.Product.CategoryHierarchy"; //"ATHENA.Product.TempProductData.CategoryCreationInCatMan_TEST";
+    protected string targetTable = Resources.CatalogManagerSQLQueries.TargetTable; 
     //Dynamic h1 front-end
     public string megaTitle = "Select MegaCategory";
     public string superTitle = "Select SuperCategory";
@@ -260,10 +259,7 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
     protected void ShowSuperCategories()
     {
         sds.ConnectionString = Resources.ConnectionStrings.ATHENA;
-        sds.SelectCommand = @"SELECT SuperCategory FROM Product.Product.SuperCategory ORDER BY SuperCategory";
-//                            @"SELECT SuperCategory FROM Product.Product.SuperCategory sc 
-//                              INNER JOIN Product.Product.CategoryHierarchyTREE tree ON sc.ID=tree.SuperCategoryID
-//                              INNER JOIN Product.Product.MegaCategory mc ON tree.MegaCategoryID=mc.ID WHERE MegaCategory = '" + ddlMegaCategory.Text;
+        sds.SelectCommand = Resources.CatalogManagerSQLQueries.OrderBySuper;
         ddlSuperCategory.DataSource = sds;
         ddlSuperCategory.DataTextField = "SuperCategory";
         ddlSuperCategory.DataValueField = "SuperCategory";
@@ -286,20 +282,11 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
             sds.ConnectionString = Resources.ConnectionStrings.ATHENA;
             if (ddlSuperCategory.Text == "")
             {
-                sds.SelectCommand = @"SELECT Category
-                                            FROM Product.Product.CategoryHierarchyTREE tree
-                                            INNER JOIN Product.Product.Category c ON tree.CategoryID=c.ID
-                                            INNER JOIN Product.Product.MegaCategory mc ON tree.MegaCategoryID=mc.ID
-                                            WHERE MegaCategory = '" + ddlMegaCategory.Text + "' AND SuperCategoryID IS NULL ORDER BY Category";
+                sds.SelectCommand = Resources.CatalogManagerSQLQueries.SelectMega;
             }
             else if (ddlSuperCategory.Text != "")
             {
-                sds.SelectCommand = @"SELECT Category
-                                        FROM Product.Product.CategoryHierarchyTREE tree
-                                        INNER JOIN Product.Product.Category c ON tree.CategoryID=c.ID
-                                        INNER JOIN Product.Product.MegaCategory mc ON tree.MegaCategoryID=mc.ID
-                                        INNER JOIN Product.Product.SuperCategory sc ON tree.SuperCategoryID=sc.ID
-                                        WHERE MegaCategory = '" + ddlMegaCategory.Text + "' AND SuperCategory = '" + ddlSuperCategory.Text + "' ORDER BY Category";
+                sds.SelectCommand = Resources.CatalogManagerSQLQueries.SelectMegaWithSuper;
             }
             ddlCategory.DataSource = sds;
             ddlCategory.DataTextField = "Category";
@@ -315,11 +302,7 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
         sds.ConnectionString = Resources.ConnectionStrings.ATHENA;
         if (ddlCategory.Text != "")
         {
-            sds.SelectCommand = @"SELECT SubCategory
-                              FROM Product.Product.SubCategoryHierarchyTree tree 
-                              INNER JOIN Product.Product.SubCategory sc ON tree.SubCategoryID=sc.ID
-                              INNER JOIN Product.Product.Category c ON tree.CategoryID=c.ID
-                              WHERE Category = '" + ddlCategory.Text + "' ORDER BY SubCategory";
+            sds.SelectCommand = Resources.CatalogManagerSQLQueries.SelectSubWithCat;
             ddlSubCategory.DataSource = sds;
             ddlSubCategory.DataTextField = "SubCategory";
             ddlSubCategory.DataValueField = "SubCategory";
@@ -348,40 +331,27 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
         switch (caseSwitch)
         {
             case 1:
-                command.CommandText = @"SELECT MegaCategory FROM Product.Product.MegaCategory";
+                command.CommandText = Resources.CatalogManagerSQLQueries.Mega;
                 previewTitle = "MegaCategory";
                 break;
             case 2:
-                command.CommandText = @"SELECT SuperCategory FROM Product.Product.SuperCategory";
+                command.CommandText = Resources.CatalogManagerSQLQueries.Super;
                 previewTitle = "SuperCategory";
                 break;
             case 3:
                 if (ddlMegaCategory.Text != "" && ddlSuperCategory.Text == "")
                 {
-                    command.CommandText = @"SELECT Category
-                                            FROM Product.Product.CategoryHierarchyTREE tree
-                                            INNER JOIN Product.Product.Category c ON tree.CategoryID=c.ID
-                                            INNER JOIN Product.Product.MegaCategory mc ON tree.MegaCategoryID=mc.ID
-                                            WHERE MegaCategory = '" + ddlMegaCategory.Text + "' AND SuperCategoryID IS NULL";
+                    command.CommandText = Resources.CatalogManagerSQLQueries.CatWithMega;
                     previewTitle = "Category";
                 }
                 else if (ddlMegaCategory.Text != "" && ddlSuperCategory.Text != "")
                 {
-                    command.CommandText = @"SELECT Category
-                                            FROM Product.Product.CategoryHierarchyTREE tree
-                                            INNER JOIN Product.Product.Category c ON tree.CategoryId=c.ID
-                                            INNER JOIN PRoduct.Product.MegaCategory mc ON tree.MegaCategoryID=mc.ID
-                                            INNER JOIN Product.Product.SuperCAtegory sc ON tree.SuperCategoryID=sc.ID
-                                            WHERE MegaCategory = '" + ddlMegaCategory.Text + "' AND SuperCategory = '" + ddlSuperCategory.Text + "'";
+                    command.CommandText = Resources.CatalogManagerSQLQueries.CatWithMegaAndSuper;
                     previewTitle = "Category";
                 }
                 break;
             case 4:
-                command.CommandText = @"SELECT SubCategory 
-                                        FROM Product.Product.SubCategoryHierarchyTREE tree 
-                                        INNER JOIN Product.Product.SubCategory subc ON tree.SubCategoryID=subc.ID
-                                        INNER JOIN Product.Product.Category c ON tree.CategoryID=c.ID
-                                        WHERE Category = '" + ddlCategory.SelectedValue + "'";
+                command.CommandText = Resources.CatalogManagerSQLQueries.SubWithCat;
                 previewTitle = "SubCategory";
                 break;
         }
@@ -450,7 +420,7 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
                 {
                     sds.ConnectionString = Resources.ConnectionStrings.ATHENA;
 
-                    sds.SelectCommand = @"WITH X AS (SELECT MegaCategory FROM Product.Product.MegaCategory WHERE LOWER(Tools.dbo.RegExReplace(megacategory,' +','')) = '" + vettedTxtCreateMegaCategory2 + "') SELECT * FROM X";
+                    sds.SelectCommand = Resources.CatalogManagerSQLQueries.FormattedMega;
                     DataSourceSelectArguments dssa = new DataSourceSelectArguments();
                     dssa.AddSupportedCapabilities(DataSourceCapabilities.RetrieveTotalRowCount);
                     dssa.RetrieveTotalRowCount = true;
@@ -519,7 +489,7 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
                 {
                     sds.ConnectionString = Resources.ConnectionStrings.ATHENA;
 
-                    sds.SelectCommand = @"WITH X AS (SELECT SuperCategory FROM Product.Product.SuperCategory WHERE LOWER(Tools.dbo.RegExReplace(supercategory,' +','')) = '" + vettedTxtCreateSuperCategory2 + "') SELECT * FROM X";
+                    sds.SelectCommand = Resources.CatalogManagerSQLQueries.FormattedSuper;
                     DataSourceSelectArguments dssa = new DataSourceSelectArguments();
                     dssa.AddSupportedCapabilities(DataSourceCapabilities.RetrieveTotalRowCount);
                     dssa.RetrieveTotalRowCount = true;
@@ -564,23 +534,12 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
                 ddlCategory.SelectedIndex = 0;
                 ddlSubCategory.SelectedIndex = 0;
             }
-        //}
-        //else
-        //{
-        //    errorMessage.Insert(0, "You're doing it wrong");
-        //    lblErrorMessage.Text = string.Join("<br />", errorMessage);
-        //    lblErrorMessage.Visible = true;
-        //    txtSuperCategory.Text = String.Empty;
-        //}
         txtSuperCategory.Text = String.Empty;
     }
 
     protected void btnAddCategory_Click(object sender, EventArgs e) 
     {
         string vettedTxtCreateCategory1 = Regex.Replace(txtCreateCategory.Text.Trim(), "[^a-zA-Z0-9 ]+", "");
-        //string furtherVettedTxtCreateCategory = vettedTxtCreateCategory.Trim();
-        //if (furtherVettedTxtCreateCategory.Length == txtCreateCategory.Text.Length)
-        //{
             try
             {
                 string vettedTxtCreateCategory2 = Regex.Replace(vettedTxtCreateCategory1.ToLower(), "[ \n\t]", "");
@@ -588,7 +547,7 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
                 {
                     sds.ConnectionString = Resources.ConnectionStrings.ATHENA;
 
-                    sds.SelectCommand = @"WITH X AS (SELECT Category FROM Product.Product.Category WHERE LOWER(Tools.dbo.RegExReplace(category,' +','')) = '" + vettedTxtCreateCategory2 + "') SELECT * FROM X";
+                    sds.SelectCommand = Resources.CatalogManagerSQLQueries.FormattedCat;
                     DataSourceSelectArguments dssa = new DataSourceSelectArguments();
                     dssa.AddSupportedCapabilities(DataSourceCapabilities.RetrieveTotalRowCount);
                     dssa.RetrieveTotalRowCount = true;
@@ -635,23 +594,12 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
                 ddlCategory.SelectedIndex = 0;
                 ddlSubCategory.SelectedIndex = 0;
             }
-        //}
-        //else
-        //{
-        //    errorMessage.Insert(0, "You're doing it wrong");
-        //    lblErrorMessage.Text = string.Join("<br />", errorMessage);
-        //    lblErrorMessage.Visible = true;
-        //    txtCreateCategory.Text = String.Empty;
-        //}
         txtCreateCategory.Text = String.Empty;
     }
 
     protected void btnAddSubCategory_Click(object sender, EventArgs e)
     {
         string vettedTxtCreateSubCategory1 = Regex.Replace(txtCreateSubCategory.Text.Trim(), "[^a-zA-Z0-9 ]+", "");
-        //string furtherVettedTxtCreateSubCategory = vettedTxtCreateSubCategory.Trim();
-        //if (furtherVettedTxtCreateSubCategory.Length == txtCreateSubCategory.Text.Length)
-        //{
             try
             {
                 string vettedTxtCreateSubCategory2 = Regex.Replace(vettedTxtCreateSubCategory1.ToLower(), "[ \n\t]", "");
@@ -659,9 +607,7 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
                 {
                     sds.ConnectionString = Resources.ConnectionStrings.ATHENA;
 
-                    sds.SelectCommand = @"WITH X AS (SELECT SubCategory 
-                                                     FROM Product.Product.SubCategory subc 
-                                                     WHERE LOWER(Tools.dbo.RegExReplace(subcategory,' +','')) = '" + vettedTxtCreateSubCategory2 + "') SELECT * FROM X";
+                    sds.SelectCommand = Resources.CatalogManagerSQLQueries.FormattedSub;
                     DataSourceSelectArguments dssa = new DataSourceSelectArguments();
                     dssa.AddSupportedCapabilities(DataSourceCapabilities.RetrieveTotalRowCount);
                     dssa.RetrieveTotalRowCount = true;
@@ -707,14 +653,6 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
                 ddlCategory.SelectedIndex = 0;
                 ddlSubCategory.SelectedIndex = 0;
             }
-        //}
-        //else
-        //{
-        //    errorMessage.Insert(0, "You're doing it wrong");
-        //    lblErrorMessage.Text = string.Join("<br />", errorMessage);
-        //    lblErrorMessage.Visible = true;
-        //    txtCreateSubCategory.Text = String.Empty;
-        //}
         txtCreateSubCategory.Text = String.Empty;
     }
 
@@ -890,7 +828,7 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
             {
                 sds.ConnectionString = Resources.ConnectionStrings.ATHENA;
 
-                sds.SelectCommand = @"WITH X AS (SELECT MegaCategory FROM Product.Product.MegaCategory WHERE Tools.dbo.RegexReplace(LOWER(megacategory),'[ \t\n]+','') = '" + vettedtxtMegaCategory + "') SELECT * FROM X";
+                sds.SelectCommand = Resources.CatalogManagerSQLQueries.VerifyMega;
                 DataSourceSelectArguments dssa = new DataSourceSelectArguments();
                 dssa.AddSupportedCapabilities(DataSourceCapabilities.RetrieveTotalRowCount);
                 dssa.RetrieveTotalRowCount = true;
@@ -898,14 +836,9 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
 
                 if (dv.Count == 0)
                 {
-                    sds.UpdateCommand = @"WITH X AS
-                                  (
-                                  SELECT MegaCategory
-                                  FROM ATHENA.Product.Product.MegaCategory
-                                  WHERE MegaCategory = '" + preEditState + "') UPDATE X SET MegaCategory = LTRIM(RTRIM('" + txtMegaCategory.Text + "'))";
+                    sds.UpdateCommand = Resources.CatalogManagerSQLQueries.UpdateMega;
                     sds.Update();
-                    sds.InsertCommand = @"INSERT INTO Product.Logging.MegaCategoriesEdited(MegaCategoryID,[Old MegaCategory Name],[New MegaCategory Name])
-                                          SELECT ID,'" + preEditState + "','" + txtMegaCategory.Text + "' FROM Product.Product.MegaCategory WHERE MegaCategory = '" + txtMegaCategory.Text + "'";
+                    sds.InsertCommand = Resources.CatalogManagerSQLQueries.InsertMega;
                     sds.Insert();
                 }
             }
@@ -926,7 +859,7 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
             {
                 sds.ConnectionString = Resources.ConnectionStrings.ATHENA;
 
-                sds.SelectCommand = @"WITH X AS (SELECT SuperCategory FROM Product.Product.SuperCategory WHERE Tools.dbo.RegexReplace(LOWER(Supercategory),'[ \t\n]+','') = '" + vettedtxtSuperCategory + "') SELECT * FROM X";
+                sds.SelectCommand = Resources.CatalogManagerSQLQueries.VerifySuper;
                 DataSourceSelectArguments dssa = new DataSourceSelectArguments();
                 dssa.AddSupportedCapabilities(DataSourceCapabilities.RetrieveTotalRowCount);
                 dssa.RetrieveTotalRowCount = true;
@@ -935,40 +868,13 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
                 {
                     if (dv.Count == 0)
                     {
-                        sds.UpdateCommand = @"WITH X AS
-                                              (
-                                              SELECT sc.SuperCategory
-                                              FROM ATHENA.Product.Product.CategoryHierarchyTREE tree
-                                              INNER JOIN Product.Product.SuperCategory sc ON tree.SuperCategoryID=sc.ID
-                                              WHERE SuperCategory = '" + preEditState2 + "') UPDATE X SET SuperCategory = LTRIM(RTRIM('" + txtSuperCategory.Text + "'))";
+                        sds.UpdateCommand = Resources.CatalogManagerSQLQueries.UpdateSuper;
                         sds.Update();
-                        sds.InsertCommand = @"INSERT INTO Product.Logging.SuperCategoriesEdited(SuperCategoryID,[Old SuperCategory Name],[New SuperCategory Name])
-                                              SELECT ID,'" + preEditState2 + "','" + txtSuperCategory.Text + "' FROM Product.Product.SuperCategory WHERE SuperCategory = '" + txtSuperCategory.Text + "'";
+                        sds.InsertCommand = Resources.CatalogManagerSQLQueries.InsertSuper;
                         sds.Insert();
                         
                     }
                 }
-                //if (preEditState != ddlMegaCategory.Text && ddlMegaCategory.SelectedIndex > 1)
-                //{
-                //    SqlDataAdapter adapter = new SqlDataAdapter();
-                //    SqlCommand command = new SqlCommand(Resources.CatalogManagerSQLQueries.UpdateMegaCatUnderEditSuperCat);
-                //    command.Connection = new SqlConnection(sds.ConnectionString);
-                //    command.CommandType = CommandType.StoredProcedure;
-
-                //    command.Parameters.Add("@MegaCatInDDL", SqlDbType.NVarChar, 50).Value = ddlMegaCategory.Text;
-                //    command.Parameters.Add("@SuperCatTxt", SqlDbType.NVarChar, 50).Value = txtSuperCategory.Text;
-
-                //    adapter.InsertCommand = command;
-                //    command.Connection.Open();
-                //    adapter.InsertCommand.ExecuteNonQuery();
-                //    command.Connection.Dispose();
-                //}
-                //else
-                //{
-                //    errorMessage.Insert(0, "Select a valid Selection");
-                //    lblErrorMessage.Text = string.Join("<br />", errorMessage);
-                //    lblErrorMessage.Visible = true;
-                //}
             }
             preEditState = String.Empty;
             preEditState2 = String.Empty;
@@ -989,7 +895,7 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
             {
                 sds.ConnectionString = Resources.ConnectionStrings.ATHENA;
 
-                sds.SelectCommand = @"WITH X AS (SELECT Category FROM Product.Product.Category WHERE Tools.dbo.RegexReplace(LOWER(category),'[ \t\n]+','') = '" + vettedtxtCategory + "') SELECT * FROM X";
+                sds.SelectCommand = Resources.CatalogManagerSQLQueries.VerifyCat;
                 DataSourceSelectArguments dssa = new DataSourceSelectArguments();
                 dssa.AddSupportedCapabilities(DataSourceCapabilities.RetrieveTotalRowCount);
                 dssa.RetrieveTotalRowCount = true;
@@ -998,27 +904,16 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
                 {
                     if (dv.Count == 0)
                     {
-                        sds.InsertCommand = @"INSERT INTO [DataOnboarding_Staging].[CatalogManager].[DataEntryLog] ([DateModified],[UserName],[JobID],[ProductID],[VariantID],[NetSuiteID],[PropertyName],[ValueFrom],[ValueTo])
-                                              SELECT GETDATE(),'Category Manager - " + this.User.Identity.Name + "', NULL, gp.ProductColorAggregate, gv.Variant_NetSuiteID, gv.Variant_NetSuiteID, 'Category', '" + preEditState3 + "', '" + txtCreateCategory.Text + "' FROM Product.HumanDecisionFactor.GlobalProduct gp INNER JOIN Product.HumanDecisionFactor.GlobalVariant gv ON gp.GlobalProductID=gv.GlobalProductID WHERE Category = '" + preEditState3 + "'";
+                        sds.InsertCommand = Resources.CatalogManagerSQLQueries.InsertCatWithSuper;
                         sds.Insert();
 
-                        sds.UpdateCommand = @"WITH X AS
-                                              (
-                                              SELECT c.category
-                                              FROM Product.Product.CategoryHierarchyTREE tree
-                                              INNER JOIN Product.Product.Category c ON tree.CategoryID=c.ID 
-                                              WHERE Category = '" + preEditState3 + "') UPDATE X SET Category = LTRIM(RTRIM('" + txtCreateCategory.Text + "'))";
+                        sds.UpdateCommand = Resources.CatalogManagerSQLQueries.UpdateCatWithSuper;
                         sds.Update();
 
-                        sds.UpdateCommand = @"WITH Y AS
-                                              (
-                                              SELECT gp.Category
-                                              FROM Product.HumanDecisionFactor.GlobalProduct gp
-                                              WHERE Category ='" + preEditState3 + "') UPDATE Y SET Category = LTRIM(RTRIM('" + txtCreateCategory.Text + "'))";
+                        sds.UpdateCommand = Resources.CatalogManagerSQLQueries.UpdateCatInGlobalProduct;
                         sds.Update();
 
-                        sds.InsertCommand = @"INSERT INTO Product.Logging.CategoriesEdited(CategoryID,[Old Category Name],[New Category Name])
-                                              SELECT ID,'" + preEditState3 + "','" + txtCreateCategory.Text + "' FROM Product.Product.Category WHERE Category = '" + txtCreateCategory.Text + "'";
+                        sds.InsertCommand = Resources.CatalogManagerSQLQueries.InsertCatIntoLog;
                         sds.Insert();
                     }
                 }
@@ -1071,7 +966,7 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
             {
                 sds.ConnectionString = Resources.ConnectionStrings.ATHENA;
 
-                sds.SelectCommand = @"WITH X AS (SELECT SubCategory FROM Product.Product.SubCategory WHERE Tools.dbo.RegexReplace(LOWER(Subcategory),'[ \t\n]+','') = '" + vettedtxtSubCategory + "') SELECT * FROM X";
+                sds.SelectCommand = Resources.CatalogManagerSQLQueries.VerifySubCat;
                 DataSourceSelectArguments dssa = new DataSourceSelectArguments();
                 dssa.AddSupportedCapabilities(DataSourceCapabilities.RetrieveTotalRowCount);
                 dssa.RetrieveTotalRowCount = true;
@@ -1080,27 +975,16 @@ public partial class Admin_CategoryManager : System.Web.UI.Page
                 {
                     if (dv.Count == 0)
                     {
-                        sds.InsertCommand = @"INSERT INTO [DataOnboarding_Staging].[CatalogManager].[DataEntryLog] ([DateModified],[UserName],[JobID],[ProductID],[VariantID],[NetSuiteID],[PropertyName],[ValueFrom],[ValueTo])
-                                              SELECT GETDATE(),'Category Manager - " + this.User.Identity.Name + "', NULL, gp.ProductColorAggregate, gv.Variant_NetSuiteID, gv.Variant_NetSuiteID, 'SubCategory', '" + preEditState2 + "', '" + txtCreateCategory.Text + "' FROM Product.HumanDecisionFactor.GlobalProduct gp INNER JOIN Product.HumanDecisionFactor.GlobalVariant gv ON gp.GlobalProductID=gv.GlobalProductID WHERE SubCategory = '" + preEditState2 + "'";
+                        sds.InsertCommand = Resources.CatalogManagerSQLQueries.InsertSubCat;
                         sds.Insert();
 
-                        sds.UpdateCommand = @"WITH X AS
-                                              (
-                                              SELECT sc.SubCategory
-                                              FROM ATHENA.Product.Product.SubCategoryTree tree
-                                              INNER JOIN ATHENA.Product.Product.SubCategory sc ON tree.SubCategoryID=sc.ID
-                                              WHERE SubCategory = '" + preEditState2 + "') UPDATE X SET SubCategory = LTRIM(RTRIM('" + txtCreateSubCategory.Text + "'))";
+                        sds.UpdateCommand = Resources.CatalogManagerSQLQueries.UpdateSubCat;
                         sds.Update();
 
-                        sds.UpdateCommand = @"WITH Y AS
-                                              (
-                                              SELECT gp.SubCategory
-                                              FROM Product.HumanDecisionFactor.GlobalProduct gp
-                                              WHERE SubCategory ='" + preEditState2 + "') UPDATE Y SET SubCategory = LTRIM(RTRIM('" + txtCreateSubCategory.Text + "'))";
+                        sds.UpdateCommand = Resources.CatalogManagerSQLQueries.UpdateSubCatInGlobalProduct;
                         sds.Update();
 
-                        sds.InsertCommand = @"INSERT INTO Product.Logging.SubCategoriesEdited(SubCategoryID,[Old SubCategory Name],[New SubCategory Name])
-                                              SELECT ID,'" + preEditState2 + "','" + txtCreateSubCategory.Text + "' FROM Product.Product.SubCategory WHERE SubCategory = '" + txtCreateSubCategory.Text + "'";
+                        sds.InsertCommand = Resources.CatalogManagerSQLQueries.InsertSubCatIntoLog;
                         sds.Insert();
                     }
                 }
